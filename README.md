@@ -1,17 +1,13 @@
-# Contribution [#]: [Issue Title]
+# Contribution 1: [Feature]: Support Container Image Format -> ARM64
 
 **Contribution Number:** 1  
 **Student:** Charitarth
 **Issue:** [[Feature]: Support Container Image Format -> ARM64](https://github.com/vllm-project/vllm-omni/issues/195)
-**Status:** Phase I Complete
-
----
+**Status:** Discontinued — issue already resolved upstream (see [Week 2 Progress](#week-2-progress)). Pivoted to [Contribution 2: apache/hamilton #1150](contribution_2_hamilton_1150.md).
 
 ## Why I Chose This Issue
 
 This issue is in a project that interests me - I would like to test out high performance serving for omni-modal models - especially because I have the hardware that is impacted by this issue. Additionally it does not seem paticularly hard and I have a lot of experience solving environment problems.
-
----
 
 ## Understanding the Issue
 
@@ -37,13 +33,13 @@ Would need to create a new Dockerfile in `docker/`
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+Setup docker + nvidia container toolkit on DGX Spark
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+1. Pull latest vllm-omni image
+2. Run vllm-omni with a model, e.g Qwen3-Omni
+3. Server starts sucessfully, inference works
 
 ### Reproduction Evidence
 
@@ -51,110 +47,35 @@ Would need to create a new Dockerfile in `docker/`
 - **Screenshots/logs:** [If applicable]
 - **My findings:** [What you discovered during reproduction]
 
----
-
-## Solution Approach
-
-### Analysis
-
-[Your analysis of the root cause - what's causing the issue?]
-
-### Proposed Solution
-
-[High-level description of your fix approach]
-
-### Implementation Plan
-
-Using UMPIRE framework (adapted):
-
-**Understand:** [Restate the problem]
-
-**Match:** [What similar patterns/solutions exist in the codebase?]
-
-**Plan:** [Step-by-step implementation plan]
-
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
-
-**Implement:** [Link to your branch/commits as you work]
-
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
-
-**Evaluate:** [How will you verify it works?]
-
----
-
-## Testing Strategy
-
-### Unit Tests
-
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
-
-### Integration Tests
-
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
-
-### Manual Testing
-
-[What you tested manually and results]
-
----
-
 ## Implementation Notes
 
-### Week [X] Progress
+### Week 1 Progress
 
-[What you built this week, challenges faced, decisions made]
+Claimed the issue upstream ([comment, 2026-06-04](https://github.com/vllm-project/vllm-omni/issues/195)) and started setting up to reproduce. The plan was to confirm that `vllm-omni` ships no arm64 (aarch64) container image and then add a Dockerfile / multi-arch build under `docker/` so the project can run on Nvidia arm64 hardware (Jetson, GB10, DGX Spark).
 
-### Week [Y] Progress
+### Week 2 Progress
 
-[Continue documenting as you work]
+**Outcome: this issue was already fixed upstream — there is nothing left to build — so I am discontinuing this contribution and pivoting to a new one.**
 
-### Code Changes
+While reproducing, I found that aarch64 (arm64) image builds had already been added to the release pipeline by **[PR #3428 — "[CI/Build] Unify release pipeline with NIGHTLY=1 option, add x86_64/aarch64 image builds"](https://github.com/vllm-project/vllm-omni/pull/3428)**, which **merged on 2026-05-17** — roughly three weeks _before_ I claimed the issue (2026-06-04). The feature requested in #195 (official arm64 container images for arm64 devices like Jetson / GB10 / DGX Spark) is therefore already delivered on `main`; the issue had simply never been closed, because the merged PR didn't reference it with a closing keyword.
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+I [commented on the issue (2026-06-08)](https://github.com/vllm-project/vllm-omni/issues/195) recommending it be closed and that a short documentation update be made to clear up the confusion in the thread (several users were still reporting the missing image).
 
----
+**Decision:** rather than spend a contribution on a docs-only cleanup of an already-resolved feature request, I selected a new, code-substantive issue — **[apache/hamilton #1150](https://github.com/apache/hamilton/issues/1150)** ("Explicitly show ResultBuilder Node as part of execution in the UI") — and documented its Phase I writeup in **[contribution_2_hamilton_1150.md](contribution_2_hamilton_1150.md)**.
 
-## Pull Request
-
-**PR Link:** [GitHub PR URL when submitted]
-
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
-
-**Maintainer Feedback:**
-
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
-
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+**Lesson learned:** a merged PR doesn't always auto-close its related issue, so an open issue can look claimable when the work is already done. Before starting, verify against _merged PRs_, not just the issue's open/closed state.
 
 ---
 
-## Learnings & Reflections
+# Contribution 2: Explicitly show ResultBuilder Node as part of execution in the UI
 
-### Technical Skills Gained
+**Contribution Number:** 2
+**Student:** Charitarth
+**Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)
+**Status:** Phase I — In Progress
 
-[What you learned technically]
+## Why I Chose This Issue
 
-### Challenges Overcome
-
-[What was hard and how you solved it]
-
-### What I'd Do Differently Next Time
-
-[Reflection on your process]
-
----
-
-## Resources Used
-
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+[Apache Hamilton](https://github.com/apache/hamilton) is a mature ML/data dataflow framework (~2.5k★, maintained by DAGWorks) for expressing data and feature pipelines as a DAG of Python functions. After my first pick ([vllm-omni #195](README.md)) turned out to be already resolved upstream, I wanted a genuinely available, code-substantive issue, and this one checks every box:
+- **Real project impact:** it improves observability of pipeline runs in the Hamilton UI — users would be able to see the final artifact a run produced and compare outputs across runs.
+- **Good learning surface:** it touches Hamilton's lifecycle-hook / tracking-adapter architecture and spans the full stack (Python capture → React render), which is exactly the kind of end-to-end feature I want experience with.
