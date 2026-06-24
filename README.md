@@ -1,31 +1,48 @@
-# Contribution 1: [Feature]: Support Container Image Format -> ARM64
+# Contribution 2: Explicitly show ResultBuilder Node as part of execution in the UI
 
-**Contribution Number:** 1  
+> Contribution 1 ([vllm-omni #195](contribution_1_vllm_omni_195.md)) was discontinued after the feature turned out to be already resolved upstream. Its writeup lives in [contribution_1_vllm_omni_195.md](contribution_1_vllm_omni_195.md).
+
+
+**Contribution Number:** 2
 **Student:** Charitarth
-**Issue:** [[Feature]: Support Container Image Format -> ARM64](https://github.com/vllm-project/vllm-omni/issues/195)
-**Status:** Discontinued — issue already resolved upstream (see [Week 2 Progress](#week-2-progress)). Pivoted to [Contribution 2: apache/hamilton #1150](contribution_2_hamilton_1150.md).
+**Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)
+**Status:** Phase II — Complete
 
 ## Why I Chose This Issue
 
-This issue is in a project that interests me - I would like to test out high performance serving for omni-modal models - especially because I have the hardware that is impacted by this issue. Additionally it does not seem paticularly hard and I have a lot of experience solving environment problems.
+[Apache Hamilton](https://github.com/apache/hamilton) is a mature ML/data dataflow framework (~2.5k★, maintained by DAGWorks) for expressing data and feature pipelines as a DAG of Python functions. After my first pick ([vllm-omni #195](contribution_1_vllm_omni_195.md)) turned out to be already resolved upstream, I wanted a genuinely available, code-substantive issue, and this one checks every box:
+- **Real project impact:** it improves observability of pipeline runs in the Hamilton UI — users would be able to see the final artifact a run produced and compare outputs across runs.
+- **Good learning surface:** it touches Hamilton's lifecycle-hook / tracking-adapter architecture and spans the full stack (Python capture → React render), which is exactly the kind of end-to-end feature I want experience with.
+
+---
 
 ## Understanding the Issue
 
 ### Problem Description
 
-The project is missing an arm64 container build, which is useful for Nvidia edge devices (which are all arm) and potentially even to those on GB100/200/300.
+In Apache Hamilton, a `ResultBuilder` assembles the final result of a DAG run, e.g. compiling node outputs into a Pandas DataFrame, a dictionary, or a custom object. It runs as part of the execution lifecycle, but the UI never shows it.
+
+This omission makes it difficult for users to:
+1. Explicitly see what final artifact a run produced.
+2. Understand how the final output was constructed from the terminal nodes of the DAG.
+3. Compare the final outputs of different execution runs side-by-side.
 
 ### Expected Behavior
 
-Users are able to run the project with docker on arm64
+The UI should explicitly show the `ResultBuilder` node as the final node in the execution graph, with:
+- Incoming edges from all the terminal nodes (final variables) that fed into it.
+- Its output type, schema, and summary statistics (data observability) displayed when selected.
+- The ability to compare the final built result across different executions.
 
 ### Current Behavior
 
-Image does not exist
+The `ResultBuilder` node is omitted from the execution graph visualization in the UI. The graph simply ends at the terminal nodes, and the final built result itself is not explicitly shown as a node with its own data observability metadata.
 
 ### Affected Components
 
-Would need to create a new Dockerfile in `docker/`
+- **SDK (Python):** `hamilton/ui/sdk/src/hamilton_sdk/adapters.py` (specifically `HamiltonTracker` and `AsyncHamiltonTracker`) and `hamilton/ui/sdk/src/hamilton_sdk/driver.py` (where node templates are extracted).
+- **Backend (Python/Django):** Django models/API capturing and storing the execution runs (no schema changes needed, as the backend already supports arbitrary nodes and dependencies).
+- **Frontend (React/TypeScript):** The DAG visualization components (`DAGViz.tsx`) which dynamically render nodes and edges based on the logged execution data.
 
 ---
 
@@ -33,49 +50,36 @@ Would need to create a new Dockerfile in `docker/`
 
 ### Environment Setup
 
-Setup docker + nvidia container toolkit on DGX Spark
+I got the local dev environment running with docker compose and checked each container manually to see if its working, applying any patches as needed. 
 
 ### Steps to Reproduce
 
-1. Pull latest vllm-omni image
-2. Run vllm-omni with a model, e.g Qwen3-Omni
-3. Server starts sucessfully, inference works
-
-### Reproduction Evidence
-
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
-
-## Implementation Notes
-
-### Week 1 Progress
-
-Claimed the issue upstream ([comment, 2026-06-04](https://github.com/vllm-project/vllm-omni/issues/195)) and started setting up to reproduce. The plan was to confirm that `vllm-omni` ships no arm64 (aarch64) container image and then add a Dockerfile / multi-arch build under `docker/` so the project can run on Nvidia arm64 hardware (Jetson, GB10, DGX Spark).
-
-### Week 2 Progress
-
-**Outcome: this issue was already fixed upstream — there is nothing left to build — so I am discontinuing this contribution and pivoting to a new one.**
-
-While reproducing, I found that aarch64 (arm64) image builds had already been added to the release pipeline by **[PR #3428 — "[CI/Build] Unify release pipeline with NIGHTLY=1 option, add x86_64/aarch64 image builds"](https://github.com/vllm-project/vllm-omni/pull/3428)**, which **merged on 2026-05-17** — roughly three weeks _before_ I claimed the issue (2026-06-04). The feature requested in #195 (official arm64 container images for arm64 devices like Jetson / GB10 / DGX Spark) is therefore already delivered on `main`; the issue had simply never been closed, because the merged PR didn't reference it with a closing keyword.
-
-I [commented on the issue (2026-06-08)](https://github.com/vllm-project/vllm-omni/issues/195) recommending it be closed and that a short documentation update be made to clear up the confusion in the thread (several users were still reporting the missing image).
-
-**Decision:** rather than spend a contribution on a docs-only cleanup of an already-resolved feature request, I selected a new, code-substantive issue — **[apache/hamilton #1150](https://github.com/apache/hamilton/issues/1150)** ("Explicitly show ResultBuilder Node as part of execution in the UI") — and documented its Phase I writeup in **[contribution_2_hamilton_1150.md](contribution_2_hamilton_1150.md)**.
-
-**Lesson learned:** a merged PR doesn't always auto-close its related issue, so an open issue can look claimable when the work is already done. Before starting, verify against _merged PRs_, not just the issue's open/closed state.
+1. Run a Hamilton DAG that uses a `ResultBuilder` (e.g. `PandasDataFrameResult` or `DictResult`) with the `HamiltonTracker` adapter enabled.
+2. Open the Hamilton UI at `http://localhost:3000`.
+3. Navigate to the project dashboard and select the run.
+4. Observe the execution graph: the graph ends at the terminal nodes, and there is no node representing the `ResultBuilder` or the final compiled output.
 
 ---
 
-# Contribution 2: Explicitly show ResultBuilder Node as part of execution in the UI
+## Solution Approach (Phase 2)
 
-**Contribution Number:** 2
-**Student:** Charitarth
-**Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)
-**Status:** Phase I — In Progress
+### Analysis
 
-## Why I Chose This Issue
+The `ResultBuilder` is a lifecycle method/adapter in Hamilton, not a standard function/node in the DAG. Therefore, it is not included in `FunctionGraph.nodes` and is not captured by the `pre_node_execute` and `post_node_execute` hooks of the tracking SDK (`HamiltonTracker` and `AsyncHamiltonTracker`).
 
-[Apache Hamilton](https://github.com/apache/hamilton) is a mature ML/data dataflow framework (~2.5k★, maintained by DAGWorks) for expressing data and feature pipelines as a DAG of Python functions. After my first pick ([vllm-omni #195](README.md)) turned out to be already resolved upstream, I wanted a genuinely available, code-substantive issue, and this one checks every box:
-- **Real project impact:** it improves observability of pipeline runs in the Hamilton UI — users would be able to see the final artifact a run produced and compare outputs across runs.
-- **Good learning surface:** it touches Hamilton's lifecycle-hook / tracking-adapter architecture and spans the full stack (Python capture → React render), which is exactly the kind of end-to-end feature I want experience with.
+So to show the `ResultBuilder` in the UI, I need to:
+1. **Detect it:** figure out which `ResultBuilder` the current graph is using.
+2. **Register a node template:** add one for the `ResultBuilder` to the DAG template registered in `post_graph_construct`.
+3. **Track the execution:** log when the `ResultBuilder` starts and finishes, capturing its inputs (the graph's terminal nodes / final variables) and its output (the built result).
+4. **Add observability:** compute summary stats and schema for the built result and hang them off the `ResultBuilder` node.
+
+### Proposed Solution
+
+I'd do this entirely from the SDK and the frontend, and not touch core Hamilton. Changing execute() itself would change behavior for every user.
+
+- Reproduce it first: a tracked pipeline using plain .execute([...]) with a few outputs, then check the UI and confirm the combined result has no node. 
+- Ask Stefan on the issue whether the synthetic-node approach is fine. He described the builder as already part of the graph, but the execute() path doesn't actually work that way.
+- SDK is where most of the work lives, in three spots: add the builder node in post_graph_construct (its deps are the requested final vars), capture the final results object in post_graph_execute  and log it through the existing update_tasks call, and teach _convert_classifications about result_builder so it doesn't get tagged a plain transform.
+- Frontend: add result_builder to the Classification union, then give the node an icon and border in the two node components. Reusing the materializer artifact styling is the least effort. Add a legend entry too. The output panel likely needs nothing, since it just renders whatever the SDK logged.
+- Backend: I think nothing. Node storage is generic enough already. The one optional bit is adding result_builder to the NodeType enum, and that's hygiene, not a blocker.
+- Verify by rerunning the repro and watching the node and its output appear.
