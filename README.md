@@ -2,15 +2,17 @@
 
 > Contribution 1 ([vllm-omni #195](contribution_1_vllm_omni_195.md)) was discontinued after the feature turned out to be already resolved upstream. Its writeup lives in [contribution_1_vllm_omni_195.md](contribution_1_vllm_omni_195.md).
 
-
-**Contribution Number:** 2
-**Student:** Charitarth
-**Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)
+**Contribution Number:** 2  
+**Student:** Charitarth  
+**Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)  
 **Status:** Phase II — Complete
+
+---
 
 ## Why I Chose This Issue
 
 [Apache Hamilton](https://github.com/apache/hamilton) is a mature ML/data dataflow framework (~2.5k★, maintained by DAGWorks) for expressing data and feature pipelines as a DAG of Python functions. After my first pick ([vllm-omni #195](contribution_1_vllm_omni_195.md)) turned out to be already resolved upstream, I wanted a genuinely available, code-substantive issue, and this one checks every box:
+
 - **Real project impact:** it improves observability of pipeline runs in the Hamilton UI — users would be able to see the final artifact a run produced and compare outputs across runs.
 - **Good learning surface:** it touches Hamilton's lifecycle-hook / tracking-adapter architecture and spans the full stack (Python capture → React render), which is exactly the kind of end-to-end feature I want experience with.
 
@@ -23,6 +25,7 @@
 In Apache Hamilton, a `ResultBuilder` assembles the final result of a DAG run, e.g. compiling node outputs into a Pandas DataFrame, a dictionary, or a custom object. It runs as part of the execution lifecycle, but the UI never shows it.
 
 This omission makes it difficult for users to:
+
 1. Explicitly see what final artifact a run produced.
 2. Understand how the final output was constructed from the terminal nodes of the DAG.
 3. Compare the final outputs of different execution runs side-by-side.
@@ -30,6 +33,7 @@ This omission makes it difficult for users to:
 ### Expected Behavior
 
 The UI should explicitly show the `ResultBuilder` node as the final node in the execution graph, with:
+
 - Incoming edges from all the terminal nodes (final variables) that fed into it.
 - Its output type, schema, and summary statistics (data observability) displayed when selected.
 - The ability to compare the final built result across different executions.
@@ -50,7 +54,22 @@ The `ResultBuilder` node is omitted from the execution graph visualization in th
 
 ### Environment Setup
 
-I got the local dev environment running with docker compose and checked each container manually to see if its working, applying any patches as needed. 
+I got the local dev environment running with docker compose and checked each container manually to confirm it was working, applying patches as needed.
+
+```bash
+# 1. Frontend deps
+npm install --prefix ui/frontend
+
+# 2. Build + start backend stack
+cd ui
+HAMILTON_TELEMETRY_ENABLED=false docker compose -f docker-compose.yml up -d --build db backend
+
+# 3. Frontend dev server (proxies /api -> :8241)
+PORT=3000 npm run dev --prefix ui/frontend
+
+# 4. Commit gate (husky is broken on v9 → use Python pre-commit)
+pre-commit install --install-hooks
+```
 
 ### Steps to Reproduce
 
@@ -58,6 +77,31 @@ I got the local dev environment running with docker compose and checked each con
 2. Open the Hamilton UI at `http://localhost:3000`.
 3. Navigate to the project dashboard and select the run.
 4. Observe the execution graph: the graph ends at the terminal nodes, and there is no node representing the `ResultBuilder` or the final compiled output.
+
+### Reproduction Evidence
+
+Containers up:
+
+```
+ui_db_1     Up   5432/tcp
+ui-backend  Up   0.0.0.0:8241->8241/tcp
+```
+
+Endpoints responding:
+
+```
+backend direct :8241   GET /api/openapi.json -> 200 application/json
+                       GET /api/docs         -> 200
+vite dev    :3000      GET /                 -> 200 (React SPA)
+                       GET /api/openapi.json -> 200 application/json (proxied to :8241)
+```
+
+OpenAPI endpoint output:
+
+```json
+{"openapi":"3.1.0","info":{"title":"NinjaAPI",...},
+ "paths":{"/api/v1/metadata/attributes/schema":{"get":{...}}}}
+```
 
 ---
 
@@ -68,6 +112,7 @@ I got the local dev environment running with docker compose and checked each con
 The `ResultBuilder` is a lifecycle method/adapter in Hamilton, not a standard function/node in the DAG. Therefore, it is not included in `FunctionGraph.nodes` and is not captured by the `pre_node_execute` and `post_node_execute` hooks of the tracking SDK (`HamiltonTracker` and `AsyncHamiltonTracker`).
 
 So to show the `ResultBuilder` in the UI, I need to:
+
 1. **Detect it:** figure out which `ResultBuilder` the current graph is using.
 2. **Register a node template:** add one for the `ResultBuilder` to the DAG template registered in `post_graph_construct`.
 3. **Track the execution:** log when the `ResultBuilder` starts and finishes, capturing its inputs (the graph's terminal nodes / final variables) and its output (the built result).
