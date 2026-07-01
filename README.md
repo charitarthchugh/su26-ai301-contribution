@@ -5,7 +5,7 @@
 **Contribution Number:** 2  
 **Student:** Charitarth  
 **Issue:** [Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)  
-**Status:** Phase II — Complete
+**Status:** Phase III — In Progress
 
 ---
 
@@ -128,3 +128,6 @@ I'd do this entirely from the SDK and the frontend, and not touch core Hamilton.
 - Frontend: add result_builder to the Classification union, then give the node an icon and border in the two node components. Reusing the materializer artifact styling is the least effort. Add a legend entry too. The output panel likely needs nothing, since it just renders whatever the SDK logged.
 - Backend: I think nothing. Node storage is generic enough already. The one optional bit is adding result_builder to the NodeType enum, and that's hygiene, not a blocker.
 - Verify by rerunning the repro and watching the node and its output appear.
+
+---
+Currently waiting on maintainer in order to have correct approach. Have created a basic issue reproduction pipeline locally (do not want to commit so it does not create conflicts). 
