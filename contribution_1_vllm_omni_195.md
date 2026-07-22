@@ -7,13 +7,13 @@
 
 ## Why I Chose This Issue
 
-This issue is in a project that interests me - I would like to test out high performance serving for omni-modal models - especially because I have the hardware that is impacted by this issue. Additionally it does not seem paticularly hard and I have a lot of experience solving environment problems.
+**Skill match:** I have a lot of experience solving environment problems and creating deployment configurations (Dockerfiles, CI build setups), which is exactly what this issue needs. **Learning goal:** I want to learn vLLM's serving internals for omni-modal models, and packaging the project for a new architecture forces me to understand how it's built and run end to end. **Understanding:** I own a DGX Spark — an arm64 machine directly impacted by this issue — so I can reproduce the gap firsthand, and I can see the fix means adding an arm64 Dockerfile under `docker/` and wiring it into the release pipeline.
 
 ## Understanding the Issue
 
 ### Problem Description
 
-The project is missing an arm64 container build, which is useful for Nvidia edge devices (which are all arm) and potentially even to those on GB100/200/300.
+At the time of issue creation, vllm-omni published no official arm64 container images, so users on Nvidia's arm64 hardware (Jetson, GB10, DGX Spark, and potentially GB100/200/300) could not run the project via Docker at all. This matters because omni-modal models are only getting more common, and Nvidia's edge and next-gen datacenter devices — natural targets for serving them — are all arm64. I chose this issue because I own a DGX Spark affected by the gap and have experience building deployment configurations, so I could both reproduce the problem and ship the fix.
 
 ### Expected Behavior
 
