@@ -7,7 +7,7 @@
 **Issue:** [apache/hamilton#1150 — Explicitly show ResultBuilder Node as part of execution in the UI](https://github.com/apache/hamilton/issues/1150)  
 **Status:** Phase IV — Complete. PR submitted upstream, awaiting maintainer review.  
 **Branch:** [`feature/ResultBuilder-node-in-ui`](https://github.com/charitarthchugh/hamilton/tree/feature/ResultBuilder-node-in-ui)  
-**Pull Request:** [apache/hamilton#1678 — Show the result builder as a node in the Hamilton UI](https://github.com/apache/hamilton/pull/1678) (open against `apache/hamilton:main`, not a draft)
+**Pull Request:** [apache/hamilton#1678 — Show the result builder as a node in the Hamilton UI](https://github.com/apache/hamilton/pull/1678) 
 
 | | |
 |---|---|
@@ -15,7 +15,7 @@
 | Diff | 10 files, +670 / −16 |
 | New tests | 15 |
 | SDK suite | 148 passed, 7 skipped (baseline on `main`: 133 / 7) |
-| Upstream repo | [apache/hamilton](https://github.com/apache/hamilton) — ~2.5k★, ASF project maintained by DAGWorks |
+| Upstream repo | [apache/hamilton](https://github.com/apache/hamilton) |
 
 ---
 
