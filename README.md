@@ -253,7 +253,7 @@ _result_builder — Result summary
 | 2026-06-16 | Environment work; reproduction confirmed |
 | 2026-07-01 | Posted my source-level analysis on the issue with two candidate approaches (A: SDK-side, B: core-side) and asked which the maintainer preferred |
 | 2026-07-15 | Maintainer (`skrawcz`) replied: "A sounds reasonable." Implementation unblocked |
-| 2026-07-29 | First implementation on `feature/ResultBuilder-node-in-ui-#1150`; opened PR [#1672](https://github.com/apache/hamilton/pull/1672), then closed it myself the same session — see below |
+| 2026-07-29 | First implementation complete on `feature/ResultBuilder-node-in-ui-#1150`; self-reviewed it the same session and judged it not reviewable enough to submit — see below |
 | 2026-08-01 → 08-04 | Rebuilt on `feature/ResultBuilder-node-in-ui`: ~14 working commits across four days, rebased into 5 reviewable per-layer commits |
 | 2026-08-04 | Opened PR [#1678](https://github.com/apache/hamilton/pull/1678) against `apache/hamilton:main` |
 
@@ -270,7 +270,7 @@ Two honest notes on cadence, since both are visible to anyone reading the git hi
 
 ### Challenges Faced
 
-1. **Closing my own first PR.** [#1672](https://github.com/apache/hamilton/pull/1672) went up on 2026-07-29 as two large `feat(sdk)` / `feat(ui)` commits, and I closed it 37 minutes later before any maintainer had looked at it. Reading it back as a reviewer would, I couldn't answer "why is this line here?" for several of them, and it also touched four frontend files that I had not verified were necessary. Closing it and rebuilding cost four days and was the right call: the resubmission is 10 files instead of 13, one commit per layer, and every non-obvious decision has a reason written into the commit body. The cheap lesson is that "it works" and "it can be reviewed" are different finish lines.
+1. **Rejecting my own first implementation.** The branch worked on 2026-07-29, as two large `feat(sdk)` / `feat(ui)` commits, and I was ready to submit it that session. Reading it back as a reviewer would, I couldn't answer "why is this line here?" for several of them, and it also touched four frontend files that I had not verified were necessary. Rebuilding instead of submitting cost four days and was the right call: what shipped is 10 files instead of 13, one commit per layer, and every non-obvious decision has a reason written into the commit body. The cheap lesson is that "it works" and "it can be reviewed" are different finish lines.
 
 2. **The DAG-hash bug I nearly shipped.** `register_dag_template_if_not_exists` matches on `(project_id, dag_hash, code_hash, name)` and returns the existing template *without inspecting the nodes posted with it*. My first version left `hash_dag` alone, reasoning that the synthetic node isn't part of the real graph so it shouldn't affect the graph's identity. That is wrong in the way that matters: any dataflow already registered before the upgrade keeps its old template, the tracker then logs task runs against a node that template doesn't contain, and the node silently never appears. Folding the name into the hash when the node is registered fixes it, at the cost of one new DAG version per dataflow on first run after upgrading — which the docs now warn about.
 
@@ -375,7 +375,7 @@ The PR opens with `Closes #1150` and then explains the *why* before the *what*: 
 | 2026-06-15 | — | Claimed the issue on [#1150](https://github.com/apache/hamilton/issues/1150) and asked for pointers into the codebase. No reply. | Went and read the code myself; posted the result on 07-01 rather than waiting. |
 | 2026-07-01 | — | Posted my own analysis on the issue: why the builder never becomes a node, why `materialize()` differs, and two candidate approaches — A (SDK-side synthesis) and B (core-side node injection) — with a stated lean toward A. | Held off implementing until the maintainer picked one, since B would have thrown A's work away. |
 | 2026-07-15 | `skrawcz` (maintainer) | "A sounds reasonable." | Took it as approval for the SDK-side approach and started implementing. Every commit on the branch stays inside `ui/`; core `hamilton/` is untouched, which is the constraint that answer imposed. Delivered in [`059e09ba`](https://github.com/apache/hamilton/pull/1678/commits/059e09ba86ac85f016bf5457ffc98cc31d42add5) and [`0e166995`](https://github.com/apache/hamilton/pull/1678/commits/0e166995079b2807a6c85d4162a8f2bb0a450d9b). |
-| 2026-07-29 | self (pre-review) | Opened PR [#1672](https://github.com/apache/hamilton/pull/1672), then reviewed my own diff as a maintainer would and found it unreviewable: two oversized commits, four frontend files I hadn't justified. Closed it the same session, before any maintainer time was spent on it. | Rebuilt over 08-01 → 08-04 as five per-layer commits and 10 files. Resubmitted as [#1678](https://github.com/apache/hamilton/pull/1678). |
+| 2026-07-29 | self (pre-review) | Reviewed my own diff as a maintainer would and found it unreviewable: two oversized commits, four frontend files I hadn't justified. Held it back rather than spend maintainer time on it. | Rebuilt over 08-01 → 08-04 as five per-layer commits and 10 files, submitted as [#1678](https://github.com/apache/hamilton/pull/1678). |
 | 2026-08-04 | — | PR [#1678](https://github.com/apache/hamilton/pull/1678) opened, `skrawcz` cc'd. | Awaiting review. Will log any feedback here with the date and the commit that addresses it. |
 
 ---
@@ -397,7 +397,7 @@ See [Challenges Faced](#challenges-faced) in full. The three that taught me the 
 
 ### What I'd Do Differently Next Time
 
-- **Review my own diff before opening the PR, not after.** The four days I spent rebuilding #1672 into #1678 were work I could have done before submitting instead of after. The trigger is cheap: read the diff top to bottom as a stranger and try to answer "why is this line here?" for each hunk. Anywhere I can't, either the code or the commit message is wrong.
+- **Review my own diff as a stranger would, before I think it's done.** The four days I spent rebuilding the first implementation were work the first pass should have absorbed. The trigger is cheap: read the diff top to bottom as a stranger and try to answer "why is this line here?" for each hunk. Anywhere I can't, either the code or the commit message is wrong.
 - **Ask the "what does this identity not cover?" question up front.** I found the DAG-hash problem by end-to-end testing against a pre-existing template, which is the expensive way. Reading `register_dag_template_if_not_exists` before writing the node would have found it in five minutes.
 - **Don't trust an invariant just because a comment states it.** `_`-prefixed functions don't become nodes, so the name looked safe. The gap was that not every node name comes from a function — visible in the code, invisible in the sentence I had read.
 - **Write the design choices down before the code, not alongside it.** This one worked and I would keep it: every question got answered once, and weeks later I could still tell why.
